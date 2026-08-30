@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 
+     * AkaaiCore Style - Deep Dark Mode Estrito
+     * Utilizando a paleta baseada no Zinc (zinc-950) para fundos profundos
+     */
+    --background: 240 10% 3.9%; 
+    --foreground: 0 0% 98%; 
+    
+    --card: 240 10% 6%; 
+    --card-foreground: 0 0% 98%;
+    
+    /* Cor primária: Vermelho Carmesim Sensual (AkaaiCore) */
+    --primary: 348 83% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 348 83% 55%;
+    
+    --muted: 240 4.8% 15.9%; /* Textos secundários e fundos de hover */
+    --muted-foreground: 240 5% 64.9%; /* zinc-400 */
+    
+    --border: 240 3.7% 15.9%; /* border-white/10 equivalent */
+    
+    --radius: 0.5rem; /* Bordas arredondadas elegantes estilo Shadcn */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    /* Fundo escuro profundo, antialiased para suavização de fontes */
+    @apply bg-background text-foreground antialiased selection:bg-primary/30;
+  }
+}
