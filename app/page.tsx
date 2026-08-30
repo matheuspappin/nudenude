@@ -38,7 +38,7 @@ export default async function LandingPage() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-          <Link href="/login" className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest text-sm rounded-full shadow-glow hover:shadow-glow-lg transition-all hover:scale-105 active:scale-95">
+          <Link href="/signup" className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest text-sm rounded-full shadow-glow hover:shadow-glow-lg transition-all hover:scale-105 active:scale-95">
             Join the Club
           </Link>
           <Link href="/become-creator" className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white font-bold text-sm rounded-full hover:bg-white/10 transition-all">

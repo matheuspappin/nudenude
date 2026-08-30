@@ -5,37 +5,28 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const supabase = createClient();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
-    // MOCK VIP BYPASS (Para os painéis de demonstração rápidos)
-    if (email === 'abc@abc.com' && password === '123456') {
-      router.push('/dashboard');
-      return;
-    }
-    if (email === 'vendaslachef@gmail.com' && password === '123456') {
-      router.push('/admin');
-      return;
-    }
-    if (email === 'usuario@abc.com' && password === '123456') {
-      router.push('/isabella');
-      return;
-    }
 
-    // LOGIN REAL COM SUPABASE
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          full_name: name,
+        }
+      }
     });
 
     setIsLoading(false);
@@ -45,11 +36,11 @@ export default function LoginPage() {
       return;
     }
 
-    // Se tiver logado com sucesso de verdade, redireciona pro inicio
+    // Após cadastro, envia para a home (onde fica o feed/conteúdo do usuário)
     router.push('/');
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -61,9 +52,9 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-[80vh] items-center justify-center w-full px-4">
       <div className="w-full max-w-md p-8 bg-card border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center">
-        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Log In</h1>
+        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Create Account</h1>
         <p className="text-muted-foreground text-sm mb-6 text-center">
-          Log into <span className="font-medium text-zinc-300">NudeNude</span> to enjoy premium content or manage your dashboard.
+          Join <span className="font-medium text-zinc-300">NudeNude</span> to enjoy premium content from your favorite creators.
         </p>
 
         {error && (
@@ -72,7 +63,19 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form className="w-full flex flex-col gap-5" onSubmit={handleLogin}>
+        <form className="w-full flex flex-col gap-5" onSubmit={handleSignup}>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-zinc-300 font-medium">Name</label>
+            <input 
+              type="text" 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="h-11 rounded-lg bg-background border border-white/10 px-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+              placeholder="Your name"
+              required
+            />
+          </div>
+
           <div className="flex flex-col gap-2">
             <label className="text-sm text-zinc-300 font-medium">E-mail</label>
             <input 
@@ -86,10 +89,7 @@ export default function LoginPage() {
           </div>
           
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-zinc-300 font-medium">Password</label>
-              <Link href="/reset-password" className="text-xs text-primary hover:underline">Forgot password?</Link>
-            </div>
+            <label className="text-sm text-zinc-300 font-medium">Password</label>
             <input 
               type="password" 
               value={password}
@@ -105,7 +105,7 @@ export default function LoginPage() {
             disabled={isLoading}
             className="h-11 mt-4 rounded-lg bg-primary text-primary-foreground font-semibold shadow-glow hover:bg-primary/90 hover:shadow-glow-lg transition-all duration-300 disabled:opacity-50"
           >
-            {isLoading ? 'Accessing...' : 'Log In'}
+            {isLoading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
 
@@ -115,12 +115,12 @@ export default function LoginPage() {
           <div className="h-px bg-white/5 flex-1" />
         </div>
 
-        <button onClick={handleGoogleLogin} className="h-11 w-full rounded-lg bg-background border border-white/10 text-white font-medium hover:bg-white/5 transition-colors">
+        <button onClick={handleGoogleSignup} className="h-11 w-full rounded-lg bg-background border border-white/10 text-white font-medium hover:bg-white/5 transition-colors">
           Continue with Google
         </button>
 
         <p className="text-sm text-muted-foreground mt-8">
-          Not a member yet? <Link href="/signup" className="text-primary font-medium hover:underline">Sign Up</Link>
+          Already have an account? <Link href="/login" className="text-primary font-medium hover:underline">Log In</Link>
         </p>
 
         <p className="text-sm text-muted-foreground mt-2">
