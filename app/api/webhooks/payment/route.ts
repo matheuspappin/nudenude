@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Usamos a Service Role Key para garantir permissões totais no backend, 
-// pois essa rota processa pagamentos e ignora RLS publicamente.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { createAdminClient } from '@/utils/supabase/admin';
 
 export async function POST(req: Request) {
+  const supabase = createAdminClient();
   try {
     const payload = await req.json();
     
