@@ -8,7 +8,9 @@ import { createClient } from '@/utils/supabase/client';
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +27,8 @@ export default function SignupPage() {
       options: {
         data: {
           full_name: name,
+          username,
+          date_of_birth: dateOfBirth,
         }
       }
     });
@@ -71,7 +75,19 @@ export default function SignupPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="h-11 rounded-lg bg-background border border-white/10 px-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
-              placeholder="Your name"
+              placeholder="Your full name"
+              required
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-zinc-300 font-medium">Username</label>
+            <input 
+              type="text" 
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="h-11 rounded-lg bg-background border border-white/10 px-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
+              placeholder="username"
               required
             />
           </div>
@@ -84,6 +100,17 @@ export default function SignupPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="h-11 rounded-lg bg-background border border-white/10 px-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all"
               placeholder="your@email.com"
+              required
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm text-zinc-300 font-medium">Date of Birth</label>
+            <input 
+              type="date" 
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="h-11 rounded-lg bg-background border border-white/10 px-4 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all [color-scheme:dark]"
               required
             />
           </div>
