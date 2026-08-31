@@ -1,9 +1,32 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const supabase = createClient();
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUsername = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (profile) {
+        setUsername(profile.username);
+      }
+    };
+    
+    fetchUsername();
+  }, [supabase]);
 
   const links = [
     { name: 'Visão Geral', href: '/dashboard' },
@@ -33,11 +56,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           );
         })}
         
-        {/* Botão extra para conectar o dashboard ao perfil público (Lógica OnlyFans) */}
-        <div className="mt-8 border-t border-white/10 pt-6">
-          <Link href="/abc" className="flex items-center gap-2 px-4 py-2.5 rounded-md text-zinc-300 font-bold bg-white/5 hover:bg-white/10 transition-colors">
+        <div className="mt-8 border-t border-white/10 pt-6 flex flex-col gap-3">
+          <Link href="/profile" className="flex items-center gap-2 px-4 py-2.5 rounded-md text-zinc-300 font-bold bg-white/5 hover:bg-white/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+            Editar Perfil
+          </Link>
+          
+          <Link href={username ? `/${username}` : '#'} className="flex items-center gap-2 px-4 py-2.5 rounded-md text-zinc-300 font-bold bg-white/5 hover:bg-white/10 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-            Ver Meu Perfil Público
+            Ver Perfil Público
           </Link>
         </div>
       </aside>
