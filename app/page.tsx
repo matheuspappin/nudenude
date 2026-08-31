@@ -27,19 +27,19 @@ export default async function LandingPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/20 blur-[120px] rounded-full pointer-events-none -z-10" />
         
         <h1 className="text-5xl sm:text-7xl font-black text-white tracking-tighter mb-6 leading-tight">
-          Where Desire <br />
+          Empower Your <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-rose-500 drop-shadow-[0_0_15px_rgba(225,29,72,0.5)]">
-            Meets Exclusivity
+            Creative Business
           </span>
         </h1>
         
         <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl font-medium mb-10 leading-relaxed">
-          For those seeking unforgettable experiences. For those not afraid to profit from their audacity. The ultimate meeting point between pleasure and absolute freedom.
+          The ultimate platform for creators to monetize exclusive content, build communities, and connect directly with their superfans in a premium environment.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
           <Link href="/signup" className="w-full sm:w-auto px-8 py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest text-sm rounded-full shadow-glow hover:shadow-glow-lg transition-all hover:scale-105 active:scale-95">
-            Join the Club
+            Join the Platform
           </Link>
           <Link href="/become-creator" className="w-full sm:w-auto px-8 py-4 bg-white/5 border border-white/10 text-white font-bold text-sm rounded-full hover:bg-white/10 transition-all">
             Become a Creator

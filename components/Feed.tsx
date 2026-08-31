@@ -8,6 +8,9 @@ const MoreHorizontalIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="
 const ChevronLeft = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>;
 const ChevronRight = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>;
 
+import { unlockMedia } from '@/app/actions/wallet';
+import { useRouter } from 'next/navigation';
+
 export type Post = {
   id: string;
   creator_id: string;
@@ -24,16 +27,34 @@ type FeedProps = {
   isSubscribed?: boolean;
 };
 
-function PostCarousel({ urls, effectivelyUnlocked, price }: { urls: string[], effectivelyUnlocked: boolean, price?: number }) {
+function PostCarousel({ post, effectivelyUnlocked }: { post: Post, effectivelyUnlocked: boolean }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const router = useRouter();
 
-  if (!urls || urls.length === 0) return null;
+  const urls = post.media_urls || [];
+  if (urls.length === 0) return null;
 
   const handlePrev = () => setCurrentIndex(prev => prev > 0 ? prev - 1 : urls.length - 1);
   const handleNext = () => setCurrentIndex(prev => prev < urls.length - 1 ? prev + 1 : 0);
 
+  const handleUnlock = async () => {
+    if (!post.price) return;
+    setIsUnlocking(true);
+    try {
+      const res = await unlockMedia(post.id, post.creator_id, post.price);
+      if (res.error) {
+        alert(res.error);
+      } else {
+        alert('Unlocked successfully! Refreshing...');
+        router.refresh();
+      }
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
   const renderMedia = (url: string) => {
-    // Para simplificar, se tiver extensões de vídeo renderiza VideoPlayer, se não, assume imagem
     if (url.includes('.mp4') || url.includes('.m3u8') || url.includes('.mov')) {
       return <VideoPlayer src={url} />;
     }
@@ -53,12 +74,16 @@ function PostCarousel({ urls, effectivelyUnlocked, price }: { urls: string[], ef
             </div>
             <h4 className="text-zinc-100 font-bold text-xl mb-2 tracking-tight">Locked Content</h4>
             <p className="text-muted-foreground text-sm mb-8 max-w-[250px]">
-              {price && price > 0 
+              {post.price && post.price > 0 
                 ? `This is an exclusive PPV pack (${urls.length} media).` 
                 : `Subscribe to VIP to unlock this pack (${urls.length} media).`}
             </p>
-            <button className="h-11 px-8 rounded-md bg-primary text-primary-foreground font-bold shadow-glow hover:bg-primary/90 hover:shadow-glow-lg transition-all duration-300 w-full sm:w-auto">
-              {price && price > 0 ? `Unlock for $${price.toFixed(2)}` : 'Unlock VIP ($9.99)'}
+            <button 
+              onClick={handleUnlock}
+              disabled={isUnlocking}
+              className="h-11 px-8 rounded-md bg-amber-500 text-amber-950 font-bold shadow-glow hover:bg-amber-400 hover:shadow-glow-lg transition-all duration-300 w-full sm:w-auto disabled:opacity-50"
+            >
+              {isUnlocking ? 'Unlocking...' : (post.price && post.price > 0 ? `Unlock for ${post.price} NudeCoins` : 'Unlock VIP ($9.99)')}
             </button>
           </div>
         )}
@@ -137,7 +162,7 @@ export default function Feed({ isCreatorView = false, posts, isSubscribed = true
 
           <p className="text-sm text-zinc-200 leading-relaxed font-medium">{post.post_text}</p>
 
-          <PostCarousel urls={post.media_urls || []} effectivelyUnlocked={effectivelyUnlocked} price={post.price} />
+          <PostCarousel post={post} effectivelyUnlocked={effectivelyUnlocked} />
         </article>
       )})}
     </div>

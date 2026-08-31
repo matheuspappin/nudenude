@@ -34,6 +34,7 @@ export default function GlobalSidebar() {
     pathname.startsWith('/dashboard') || 
     pathname.startsWith('/admin') || 
     pathname.startsWith('/login') || 
+    pathname.startsWith('/signup') || 
     pathname.startsWith('/become-creator')
   ) {
     return null;

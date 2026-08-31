@@ -206,9 +206,6 @@ export default function UserProfile() {
                 <p className="text-[10px] text-zinc-500">Contact support to change your email.</p>
               </div>
             </div>
-          </div>
-        </div>
-        
         <div className="flex flex-col gap-1.5 mb-8">
            <label className="text-sm font-medium text-zinc-400">Bio (Optional)</label>
            <textarea 

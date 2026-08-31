@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@farcaster/mini-app-solana": "latest",
+    "@privy-io/react-auth": "latest",
+    "@privy-io/server-auth": "latest",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
     "hls.js": "^1.5.11",

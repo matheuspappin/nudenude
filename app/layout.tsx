@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
 import GlobalSidebar from '@/components/GlobalSidebar'
+import Providers from '@/components/Providers'
 import './globals.css'
 
 // Fonte limpa e moderna configurada via next/font
@@ -24,7 +25,7 @@ export default function RootLayout({
     // Forçando a classe "dark" para manter a estética estritamente dark mode
     <html lang="en" className="dark">
       <body className={`${inter.variable} font-sans min-h-screen flex bg-background selection:bg-primary/30`}>
-        
+        <Providers>
         {/* Sidebar Global (Condicional) renderizada no Client Side */}
         <GlobalSidebar />
 
@@ -64,8 +65,8 @@ export default function RootLayout({
             </div>
           </div>
         </footer>
-
         </div>
+        </Providers>
       </body>
     </html>
   )

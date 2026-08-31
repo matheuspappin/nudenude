@@ -59,60 +59,73 @@ export default function CreatorProfile({ params }: { params: { username: string 
         }
       }
 
-      // 3. Busca Posts (O RLS filtrará automaticamente os travados se não for assinante)
-      const { data: postsData } = await supabase
-        .from('media')
-        .select('*')
-        .eq('creator_id', profileData.id)
-        .order('created_at', { ascending: false });
-
       let finalPosts: Post[] = [];
       let totalPostsCount = 0;
       let totalMediaCount = 0;
 
-      if (postsData) {
-        totalPostsCount = postsData.length;
-        totalMediaCount = postsData.filter(p => p.media_url).length;
-
-        finalPosts = postsData.map(p => {
-          let mediaArr = [];
-          if (p.media_urls && Array.isArray(p.media_urls)) {
-            mediaArr = p.media_urls;
-          } else if (p.media_url) {
-            mediaArr = [p.media_url];
-          }
-
-          // Se tem preço PPV (>0), ele fica trancado para todos (mesmo assinantes)
-          // até que comprem (Lógica de compras será na fase 3).
-          const isUnlocked = p.price && p.price > 0 ? false : true;
-
-          return {
-            id: p.id,
-            creator_id: p.creator_id,
-            creator_name: profileData.username,
-            post_text: p.post_text || '',
-            media_urls: mediaArr,
-            is_unlocked: isUnlocked,
-            price: p.price
-          };
-        });
+      let purchasedMediaIds = new Set();
+      if (session && !isCreatorView) {
+        // Fetch purchased media for this user
+        const { data: purchases } = await supabase
+          .from('purchased_media')
+          .select('media_id')
+          .eq('user_id', session.user.id);
+        
+        if (purchases) {
+          purchases.forEach(p => purchasedMediaIds.add(p.media_id));
+        }
       }
 
-      // 4. PAYWALL SINTÉTICO (A MÁGICA DA FASE 4)
-      // Se não for assinante, nós geramos N "Cadeados" para dar a sensação de que há muito conteúdo bloqueado
-      // Sem de fato retornar o conteúdo do banco de dados (que está protegido pelo RLS).
-      if (!isSubscribed && session?.user.id !== profileData.id) {
-         // Mock de 5 posts cadeados para marketing
-         const fakeLockedPosts = Array.from({ length: 5 }).map((_, i) => ({
-           id: `locked_${i}`,
-           creator_id: profileData.id,
-           creator_name: profileData.username,
-           post_text: 'Conteúdo exclusivo para assinantes VIP. Desbloqueie agora para ver.',
-           media_urls: ['', '', ''], // Mock de um combo de 3 mídias bloqueadas
-           is_unlocked: false,
-           price: 0
-         }));
-         finalPosts = [...finalPosts, ...fakeLockedPosts];
+      if (session && (isSubscribed || isCreatorView)) {
+        // 3. Busca Posts APENAS se o usuário estiver logado e tiver permissão (assinante ou dono)
+        const { data: postsData } = await supabase
+          .from('media')
+          .select('*')
+          .eq('creator_id', profileData.id)
+          .order('created_at', { ascending: false });
+
+        if (postsData) {
+          totalPostsCount = postsData.length;
+          totalMediaCount = postsData.filter(p => p.media_url).length;
+
+          finalPosts = postsData.map(p => {
+            let mediaArr = [];
+            if (p.media_urls && Array.isArray(p.media_urls)) {
+              mediaArr = p.media_urls;
+            } else if (p.media_url) {
+              mediaArr = [p.media_url];
+            }
+
+            const isUnlocked = (p.price && p.price > 0 && !purchasedMediaIds.has(p.id)) ? false : true;
+
+            return {
+              id: p.id,
+              creator_id: p.creator_id,
+              creator_name: profileData.username,
+              post_text: p.post_text || '',
+              media_urls: mediaArr,
+              is_unlocked: isUnlocked,
+              price: p.price
+            };
+          });
+        }
+      } else {
+        // 4. PAYWALL ESTrito (Compliance MoonPay)
+        // Se não for assinante ou não estiver logado, NENHUM conteúdo real vaza para o frontend.
+        // Apenas geramos N "Cadeados" genéricos.
+        totalPostsCount = creator?.totalPostsCount || 15; // Fake count
+        totalMediaCount = creator?.totalMediaCount || 24; // Fake count
+        
+        const fakeLockedPosts = Array.from({ length: 5 }).map((_, i) => ({
+          id: `locked_${i}`,
+          creator_id: profileData.id,
+          creator_name: profileData.username,
+          post_text: 'Premium Creator Content. Subscribe or login to unlock.',
+          media_urls: ['', '', ''], // Mock media
+          is_unlocked: false,
+          price: 0
+        }));
+        finalPosts = fakeLockedPosts;
       }
 
       setPosts(finalPosts);
