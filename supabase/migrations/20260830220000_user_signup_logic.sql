@@ -6,13 +6,13 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth DATE;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, username, display_name, date_of_birth, is_creator)
+    INSERT INTO public.profiles (id, username, display_name, date_of_birth, role)
     VALUES (
         NEW.id,
         COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1) || '_' || substr(md5(random()::text), 1, 4)),
         COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1)),
         (NULLIF(NEW.raw_user_meta_data->>'date_of_birth', ''))::DATE,
-        FALSE
+        'consumer'
     );
     RETURN NEW;
 END;
