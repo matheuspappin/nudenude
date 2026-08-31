@@ -61,19 +61,25 @@ export default function CreatorProfile({ params }: { params: { username: string 
 
       // 3. Busca Posts (O RLS filtrará automaticamente os travados se não for assinante)
       const { data: postsData } = await supabase
-        .from('posts')
+        .from('media')
         .select('*')
         .eq('creator_id', profileData.id)
         .order('created_at', { ascending: false });
 
       let finalPosts: Post[] = [];
+      let totalPostsCount = 0;
+      let totalMediaCount = 0;
+
       if (postsData) {
+        totalPostsCount = postsData.length;
+        totalMediaCount = postsData.filter(p => p.media_url).length;
+
         finalPosts = postsData.map(p => ({
           id: p.id,
           creator_id: p.creator_id,
           creator_name: profileData.username,
-          post_text: p.content_text || '',
-          media_urls: p.media_urls || [],
+          post_text: p.post_text || '',
+          media_urls: p.media_url ? [p.media_url] : [],
           is_unlocked: true // Se o RLS retornou, é porque tá desbloqueado pra ele
         }));
       }
@@ -95,6 +101,7 @@ export default function CreatorProfile({ params }: { params: { username: string 
       }
 
       setPosts(finalPosts);
+      setCreator({ ...profileData, totalPostsCount, totalMediaCount });
       setIsLoading(false);
     }
     
@@ -159,19 +166,19 @@ export default function CreatorProfile({ params }: { params: { username: string 
           onClick={() => setActiveTab('posts')}
           className={`flex-1 pb-4 text-sm font-bold transition-colors ${activeTab === 'posts' ? 'text-primary border-b-2 border-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
-          120 POSTS
+          {creator.totalPostsCount || 0} POSTS
         </button>
         <button 
           onClick={() => setActiveTab('media')}
           className={`flex-1 pb-4 text-sm font-bold transition-colors ${activeTab === 'media' ? 'text-primary border-b-2 border-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
-          85 MÍDIAS
+          {creator.totalMediaCount || 0} MÍDIAS
         </button>
         <button 
           onClick={() => setActiveTab('likes')}
           className={`flex-1 pb-4 text-sm font-bold transition-colors ${activeTab === 'likes' ? 'text-primary border-b-2 border-primary' : 'text-zinc-500 hover:text-zinc-300'}`}
         >
-          1.2M LIKES
+          {(creator.gamification_points || 0).toLocaleString()} LIKES
         </button>
       </div>
 
