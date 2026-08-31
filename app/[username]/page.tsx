@@ -118,8 +118,13 @@ export default function CreatorProfile({ params }: { params: { username: string 
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
-      <div className="w-full h-48 sm:h-56 rounded-b-2xl bg-zinc-900 border-b border-x border-white/10 mb-20 relative overflow-visible">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-zinc-900 rounded-b-2xl opacity-50" />
+      <div 
+        className="w-full h-48 sm:h-56 rounded-b-2xl bg-zinc-900 border-b border-x border-white/10 mb-20 relative overflow-visible bg-cover bg-center"
+        style={creator.cover_url ? { backgroundImage: `url(${creator.cover_url})` } : {}}
+      >
+        {!creator.cover_url && (
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-zinc-900 rounded-b-2xl opacity-50" />
+        )}
         
         <div className="absolute -bottom-16 left-6 flex items-end gap-5">
           <div className="w-32 h-32 rounded-full border-4 border-background bg-zinc-800 flex items-center justify-center shadow-2xl overflow-hidden">

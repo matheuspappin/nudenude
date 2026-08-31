@@ -19,7 +19,8 @@ export default function UserProfile() {
     display_name: '',
     username: '',
     bio: '',
-    avatar_url: ''
+    avatar_url: '',
+    cover_url: ''
   });
 
   useEffect(() => {
@@ -46,7 +47,8 @@ export default function UserProfile() {
           display_name: profileData?.display_name || '',
           username: profileData?.username || '',
           bio: profileData?.bio || '',
-          avatar_url: profileData?.avatar_url || ''
+          avatar_url: profileData?.avatar_url || '',
+          cover_url: profileData?.cover_url || ''
         });
       } catch (err: any) {
         console.error('Error fetching profile:', err.message);
@@ -75,7 +77,9 @@ export default function UserProfile() {
         .update({
           display_name: profile.display_name,
           username: profile.username,
-          bio: profile.bio
+          bio: profile.bio,
+          avatar_url: profile.avatar_url,
+          cover_url: profile.cover_url
         })
         .eq('id', profile.id);
 
@@ -134,20 +138,42 @@ export default function UserProfile() {
       <div className="bg-card border border-white/10 rounded-xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-white mb-6">Public Information</h2>
         
-        <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center mb-6">
-          {/* Avatar Upload */}
-          <div className="relative group cursor-pointer" onClick={handleAvatarUpload}>
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white/20 group-hover:border-primary/50 transition-colors" />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-dashed border-white/20 flex flex-col items-center justify-center text-zinc-500 group-hover:border-primary/50 group-hover:text-primary transition-colors">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                 <span className="text-xs font-bold">Photo</span>
+          {/* Avatar and Cover URLs */}
+          <div className="flex flex-col sm:flex-row gap-6 w-full">
+            <div className="flex flex-col items-center gap-3 shrink-0">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="w-24 h-24 rounded-full object-cover border-2 border-white/20" />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-dashed border-white/20 flex flex-col items-center justify-center text-zinc-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  <span className="text-xs font-bold">Photo</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-4 w-full">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-zinc-400">Avatar Image URL (Link)</label>
+                <input 
+                  type="text" 
+                  value={profile.avatar_url} 
+                  onChange={(e) => setProfile({...profile, avatar_url: e.target.value})}
+                  placeholder="https://..."
+                  className="h-11 px-4 rounded-lg bg-background border border-white/10 text-white focus:border-primary/50 focus:outline-none transition-colors" 
+                />
               </div>
-            )}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-zinc-400">Cover Image URL (Link)</label>
+                <input 
+                  type="text" 
+                  value={profile.cover_url} 
+                  onChange={(e) => setProfile({...profile, cover_url: e.target.value})}
+                  placeholder="https://..."
+                  className="h-11 px-4 rounded-lg bg-background border border-white/10 text-white focus:border-primary/50 focus:outline-none transition-colors" 
+                />
+              </div>
+            </div>
           </div>
-          
-          <div className="flex-1 w-full flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-zinc-400">Display Name</label>
               <input 
