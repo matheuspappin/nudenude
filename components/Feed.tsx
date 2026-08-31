@@ -15,6 +15,7 @@ export type Post = {
   post_text: string;
   media_urls: string[]; 
   is_unlocked: boolean;
+  price?: number;
 };
 
 type FeedProps = {
@@ -23,7 +24,7 @@ type FeedProps = {
   isSubscribed?: boolean;
 };
 
-function PostCarousel({ urls, effectivelyUnlocked }: { urls: string[], effectivelyUnlocked: boolean }) {
+function PostCarousel({ urls, effectivelyUnlocked, price }: { urls: string[], effectivelyUnlocked: boolean, price?: number }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!urls || urls.length === 0) return null;
@@ -52,10 +53,12 @@ function PostCarousel({ urls, effectivelyUnlocked }: { urls: string[], effective
             </div>
             <h4 className="text-zinc-100 font-bold text-xl mb-2 tracking-tight">Locked Content</h4>
             <p className="text-muted-foreground text-sm mb-8 max-w-[250px]">
-              Subscribe to VIP to unlock this pack ({urls.length} media).
+              {price && price > 0 
+                ? `This is an exclusive PPV pack (${urls.length} media).` 
+                : `Subscribe to VIP to unlock this pack (${urls.length} media).`}
             </p>
             <button className="h-11 px-8 rounded-md bg-primary text-primary-foreground font-bold shadow-glow hover:bg-primary/90 hover:shadow-glow-lg transition-all duration-300 w-full sm:w-auto">
-              Unlock VIP ($9.99)
+              {price && price > 0 ? `Unlock for $${price.toFixed(2)}` : 'Unlock VIP ($9.99)'}
             </button>
           </div>
         )}
@@ -134,7 +137,7 @@ export default function Feed({ isCreatorView = false, posts, isSubscribed = true
 
           <p className="text-sm text-zinc-200 leading-relaxed font-medium">{post.post_text}</p>
 
-          <PostCarousel urls={post.media_urls || []} effectivelyUnlocked={effectivelyUnlocked} />
+          <PostCarousel urls={post.media_urls || []} effectivelyUnlocked={effectivelyUnlocked} price={post.price} />
         </article>
       )})}
     </div>

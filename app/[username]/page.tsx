@@ -74,14 +74,28 @@ export default function CreatorProfile({ params }: { params: { username: string 
         totalPostsCount = postsData.length;
         totalMediaCount = postsData.filter(p => p.media_url).length;
 
-        finalPosts = postsData.map(p => ({
-          id: p.id,
-          creator_id: p.creator_id,
-          creator_name: profileData.username,
-          post_text: p.post_text || '',
-          media_urls: p.media_url ? [p.media_url] : [],
-          is_unlocked: true // Se o RLS retornou, é porque tá desbloqueado pra ele
-        }));
+        finalPosts = postsData.map(p => {
+          let mediaArr = [];
+          if (p.media_urls && Array.isArray(p.media_urls)) {
+            mediaArr = p.media_urls;
+          } else if (p.media_url) {
+            mediaArr = [p.media_url];
+          }
+
+          // Se tem preço PPV (>0), ele fica trancado para todos (mesmo assinantes)
+          // até que comprem (Lógica de compras será na fase 3).
+          const isUnlocked = p.price && p.price > 0 ? false : true;
+
+          return {
+            id: p.id,
+            creator_id: p.creator_id,
+            creator_name: profileData.username,
+            post_text: p.post_text || '',
+            media_urls: mediaArr,
+            is_unlocked: isUnlocked,
+            price: p.price
+          };
+        });
       }
 
       // 4. PAYWALL SINTÉTICO (A MÁGICA DA FASE 4)
@@ -95,7 +109,8 @@ export default function CreatorProfile({ params }: { params: { username: string 
            creator_name: profileData.username,
            post_text: 'Conteúdo exclusivo para assinantes VIP. Desbloqueie agora para ver.',
            media_urls: ['', '', ''], // Mock de um combo de 3 mídias bloqueadas
-           is_unlocked: false
+           is_unlocked: false,
+           price: 0
          }));
          finalPosts = [...finalPosts, ...fakeLockedPosts];
       }

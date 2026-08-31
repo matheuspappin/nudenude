@@ -9,12 +9,12 @@ export default function CreatorStudio() {
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [mediaInput, setMediaInput] = useState('');
   const [isLocked, setIsLocked] = useState(false);
+  const [price, setPrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const supabase = createClient();
   const router = useRouter();
 
-  // O Post de Rascunho gerado em tempo real para o Preview
   const draftPost: Post = {
     id: 'draft',
     creator_id: 'me',
@@ -22,6 +22,7 @@ export default function CreatorStudio() {
     post_text: caption || 'Escreva algo na legenda para ver a prévia...',
     media_urls: mediaUrls,
     is_unlocked: !isLocked,
+    price: isLocked && price ? parseFloat(price) : 0
   };
 
   const handleAddMedia = () => {
@@ -44,12 +45,13 @@ export default function CreatorStudio() {
     
     if (session) {
       const { error } = await supabase
-        .from('posts')
+        .from('media')
         .insert({
           creator_id: session.user.id,
-          content_text: caption,
+          post_text: caption,
           media_urls: mediaUrls.length > 0 ? mediaUrls : null,
-          is_locked: isLocked
+          is_locked: isLocked,
+          price: isLocked && price ? parseFloat(price) : 0
         });
 
       if (!error) {
@@ -57,6 +59,7 @@ export default function CreatorStudio() {
         setCaption('');
         setMediaUrls([]);
         setIsLocked(false);
+        setPrice('');
       } else {
         alert('Erro ao postar: ' + error.message);
       }
@@ -121,17 +124,39 @@ export default function CreatorStudio() {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-white/5 flex items-center gap-3">
-             <input 
-               type="checkbox" 
-               id="lockPost"
-               checked={isLocked}
-               onChange={e => setIsLocked(e.target.checked)}
-               className="w-4 h-4 rounded bg-background border-white/10 text-primary focus:ring-primary/50" 
-             />
-             <label htmlFor="lockPost" className="text-sm text-zinc-300 font-medium cursor-pointer">
-               Trancar para não-assinantes (Paywall)
-             </label>
+          <div className="pt-4 border-t border-white/5 flex flex-col gap-4">
+             <div className="flex items-center gap-3">
+               <input 
+                 type="checkbox" 
+                 id="lockPost"
+                 checked={isLocked}
+                 onChange={e => {
+                   setIsLocked(e.target.checked);
+                   if (!e.target.checked) setPrice(''); // Reset price if unlocked
+                 }}
+                 className="w-4 h-4 rounded bg-background border-white/10 text-primary focus:ring-primary/50" 
+               />
+               <label htmlFor="lockPost" className="text-sm text-zinc-300 font-medium cursor-pointer">
+                 Trancar para não-assinantes (Paywall)
+               </label>
+             </div>
+
+             {isLocked && (
+               <div className="flex flex-col gap-2 pl-7 animate-in fade-in slide-in-from-top-2 duration-200">
+                 <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Preço de Desbloqueio (PPV)</label>
+                 <div className="relative w-48">
+                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">$</span>
+                   <input 
+                     type="number" step="0.01" min="0"
+                     value={price}
+                     onChange={e => setPrice(e.target.value)}
+                     className="h-11 w-full rounded-lg bg-background border border-white/10 pl-8 pr-4 text-white text-sm focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none"
+                     placeholder="0.00 (Grátis para VIPs)" 
+                   />
+                 </div>
+                 <p className="text-[10px] text-zinc-500">Deixe zerado para disponibilizar grátis aos seus assinantes VIP mensais. Defina um valor para vender como Pack avulso.</p>
+               </div>
+             )}
           </div>
 
           <button 
