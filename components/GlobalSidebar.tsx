@@ -1,10 +1,33 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 
 export default function GlobalSidebar() {
   const pathname = usePathname();
+  const supabase = createClient();
+  const [role, setRole] = useState<string | null>(null);
   
+  useEffect(() => {
+    const fetchRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+        
+      if (profile) {
+        setRole(profile.role);
+      }
+    };
+    
+    fetchRole();
+  }, [supabase]);
+
   // Ocultar a sidebar global em rotas que têm sua própria navegação, como Dashboard, Admin ou páginas de tela cheia
   if (
     pathname === '/' ||
@@ -43,9 +66,16 @@ export default function GlobalSidebar() {
        </div>
        
        <div className="mt-auto px-4 lg:px-6 mb-8 hidden lg:flex flex-col gap-4">
-          <Link href="/become-creator" className="w-full text-center py-2.5 rounded-full bg-white/5 text-primary text-sm font-bold hover:bg-white/10 transition-colors">
-            Become a Creator
-          </Link>
+          {role === 'creator' ? (
+            <Link href="/dashboard" className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-zinc-800 text-white text-sm font-bold border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600 transition-colors shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+              Creator Dashboard
+            </Link>
+          ) : (
+            <Link href="/become-creator" className="w-full text-center py-2.5 rounded-full bg-white/5 text-primary text-sm font-bold hover:bg-white/10 transition-colors">
+              Become a Creator
+            </Link>
+          )}
        </div>
     </nav>
   );
