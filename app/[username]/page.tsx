@@ -284,7 +284,7 @@ export default function CreatorProfile({ params }: { params: { username: string 
           <div className="flex flex-col gap-6">
             {posts.filter(p => activeTab === 'feed' || p.collection_id === activeTab).length === 0 ? (
               <div className="p-8 text-center bg-card border border-white/5 rounded-2xl text-zinc-500 text-sm">
-                Nenhum vídeo encontrado.
+                Nenhum conteúdo encontrado.
               </div>
             ) : (
               posts.filter(p => activeTab === 'feed' || p.collection_id === activeTab).map(post => {
@@ -295,27 +295,42 @@ export default function CreatorProfile({ params }: { params: { username: string 
                       <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden">
                         {creator.avatar_url && <img src={creator.avatar_url} className="w-full h-full object-cover" />}
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="font-bold text-white text-sm">{creator.username}</p>
                         <p className="text-xs text-zinc-500">{new Date(post.created_at).toLocaleDateString()}</p>
                       </div>
+                      {post.label && (
+                        <span className="px-2 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-widest rounded">
+                          {post.label}
+                        </span>
+                      )}
                     </div>
                     
                     {canView ? (
                       <div className="text-zinc-300 text-sm leading-relaxed">
-                        {post.content_text}
-                        {post.media_url && (
-                          <div className="mt-4 rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center">
-                            <span className="text-zinc-600">Video Player Placeholder</span>
+                        {post.post_text}
+                        {post.media_urls && post.media_urls.length > 0 && (
+                          <div className="mt-4 flex flex-col gap-2">
+                            {post.media_urls.map((url: string, idx: number) => (
+                              <div key={idx} className="rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center">
+                                {url.includes('.mp4') || url.includes('.mov') || url.includes('.m3u8') ? (
+                                  <video src={url} controls className="w-full h-full object-cover" />
+                                ) : (
+                                  <img src={url} alt="Media" className="w-full h-full object-cover" />
+                                )}
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className="relative rounded-xl overflow-hidden bg-zinc-900 aspect-video flex flex-col items-center justify-center border border-white/5">
-                        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1547153760-18fc86324498?q=80&w=600&auto=format&fit=crop')] bg-cover bg-center blur-md opacity-20" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-zinc-900/80 to-black/90" />
                         <svg className="w-12 h-12 text-zinc-600 mb-3 z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                         <h4 className="text-white font-bold z-10">Subscriber Only Post</h4>
-                        <p className="text-xs text-zinc-400 z-10 mt-1">Unlock this and more by subscribing.</p>
+                        <p className="text-xs text-zinc-400 z-10 mt-1">
+                          {post.price && post.price > 0 ? `Unlock for $${post.price}` : 'Unlock this and more by subscribing.'}
+                        </p>
                       </div>
                     )}
                   </div>

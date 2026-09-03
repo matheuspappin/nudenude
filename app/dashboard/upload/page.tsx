@@ -4,6 +4,18 @@ import Feed, { Post } from '@/components/Feed';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 
+type Tier = {
+  id: string;
+  name: string;
+  price: number;
+  status: string;
+};
+
+type PpvOverride = {
+  tier_id: string;
+  free: boolean;
+};
+
 export default function CreatorStudio() {
   const [caption, setCaption] = useState('');
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
@@ -11,21 +23,66 @@ export default function CreatorStudio() {
   const [isLocked, setIsLocked] = useState(false);
   const [price, setPrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Collections
   const [collections, setCollections] = useState<any[]>([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
   const [newCollectionName, setNewCollectionName] = useState('');
+  
+  // Labels (Etiquetas)
+  const [label, setLabel] = useState('');
+  const [existingLabels, setExistingLabels] = useState<string[]>([]);
+  
+  // Tiers (Visibilidade)
+  const [tiers, setTiers] = useState<Tier[]>([]);
+  const [selectedTierIds, setSelectedTierIds] = useState<string[]>([]);
+  
+  // PPV overrides per tier
+  const [ppvOverrides, setPpvOverrides] = useState<PpvOverride[]>([]);
   
   const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
-    async function fetchCollections() {
+    async function fetchData() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const { data } = await supabase.from('post_collections').select('*').eq('creator_id', session.user.id).order('created_at', { ascending: false });
-      if (data) setCollections(data);
+      
+      // Fetch collections
+      const { data: colData } = await supabase
+        .from('post_collections')
+        .select('*')
+        .eq('creator_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if (colData) setCollections(colData);
+      
+      // Fetch existing labels from posts
+      const { data: postsData } = await supabase
+        .from('posts')
+        .select('label')
+        .eq('creator_id', session.user.id)
+        .not('label', 'is', null);
+      
+      if (postsData) {
+        const labels = Array.from(new Set(postsData.map(p => p.label).filter(Boolean)));
+        setExistingLabels(labels);
+      }
+      
+      // Fetch active tiers
+      const { data: tiersData } = await supabase
+        .from('subscription_tiers')
+        .select('*')
+        .eq('creator_id', session.user.id)
+        .eq('status', 'active')
+        .order('price', { ascending: true });
+      
+      if (tiersData) {
+        setTiers(tiersData);
+        // Initialize PPV overrides with all tiers set to free=true by default
+        setPpvOverrides(tiersData.map(t => ({ tier_id: t.id, free: true })));
+      }
     }
-    fetchCollections();
+    fetchData();
   }, [supabase]);
 
   const draftPost: Post = {
@@ -47,6 +104,20 @@ export default function CreatorStudio() {
 
   const handleRemoveMedia = (index: number) => {
     setMediaUrls(mediaUrls.filter((_, i) => i !== index));
+  };
+
+  const toggleTierSelection = (tierId: string) => {
+    setSelectedTierIds(prev => 
+      prev.includes(tierId) 
+        ? prev.filter(id => id !== tierId) 
+        : [...prev, tierId]
+    );
+  };
+
+  const togglePpvOverride = (tierId: string) => {
+    setPpvOverrides(prev => 
+      prev.map(o => o.tier_id === tierId ? { ...o, free: !o.free } : o)
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,7 +157,10 @@ export default function CreatorStudio() {
           media_urls: mediaUrls.length > 0 ? mediaUrls : null,
           is_locked: isLocked,
           price: isLocked && price ? parseFloat(price) : 0,
-          collection_id: finalCollectionId
+          collection_id: finalCollectionId,
+          label: label.trim() || null,
+          visible_tier_ids: selectedTierIds.length > 0 ? selectedTierIds : null,
+          ppv_tier_overrides: isLocked && price && parseFloat(price) > 0 ? ppvOverrides : '[]'
         });
 
       if (!error) {
@@ -97,6 +171,12 @@ export default function CreatorStudio() {
         setPrice('');
         setNewCollectionName('');
         setSelectedCollectionId('');
+        setLabel('');
+        setSelectedTierIds([]);
+        // Add new label to existing labels if it's new
+        if (label.trim() && !existingLabels.includes(label.trim())) {
+          setExistingLabels([...existingLabels, label.trim()]);
+        }
       } else {
         alert('Erro ao postar: ' + error.message);
       }
@@ -110,7 +190,7 @@ export default function CreatorStudio() {
       <div className="flex-1 flex flex-col gap-6">
         <div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Criar Nova Postagem</h1>
-          <p className="text-zinc-500 text-sm mt-1">Publique conteúdos ou crie Packs exclusivos.</p>
+          <p className="text-zinc-500 text-sm mt-1">Publique conteúdos, defina etiquetas e controle quem tem acesso.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-card border border-white/10 rounded-xl p-6 shadow-sm flex flex-col gap-5">
@@ -146,7 +226,6 @@ export default function CreatorStudio() {
               </div>
             )}
 
-            {/* Input para adicionar nova mídia (Mockando upload real por URL por enquanto) */}
             <div className="flex gap-2">
               <input 
                 type="text" 
@@ -161,6 +240,42 @@ export default function CreatorStudio() {
             </div>
           </div>
 
+          {/* ETIQUETA / LABEL */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              🏷️ Etiqueta (aparece como aba no perfil público)
+            </label>
+            <div className="flex flex-col gap-2">
+              {existingLabels.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {existingLabels.map(l => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLabel(label === l ? '' : l)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                        label === l
+                          ? 'border-primary/50 bg-primary/10 text-primary'
+                          : 'border-white/10 text-zinc-400 hover:bg-white/5'
+                      }`}
+                    >
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input 
+                type="text" 
+                value={label}
+                onChange={e => setLabel(e.target.value)}
+                placeholder="Ex: Heels, Freestyle, Behind The Scenes, Tutoriais" 
+                className="h-10 bg-background border border-white/10 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-primary/50"
+              />
+              <p className="text-[10px] text-zinc-500">Esta etiqueta será uma aba no seu perfil público. Clientes poderão filtrar por ela.</p>
+            </div>
+          </div>
+
+          {/* COLEÇÃO / SÉRIE */}
           <div className="flex flex-col gap-3">
             <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Local da Postagem (Série / Coleção)</label>
             <div className="flex flex-col gap-2">
@@ -190,9 +305,40 @@ export default function CreatorStudio() {
                 />
               )}
             </div>
-            <p className="text-[10px] text-zinc-500 mt-1">Organize seus vídeos em pastas para facilitar a navegação no seu perfil.</p>
           </div>
 
+          {/* VISIBILIDADE POR TIER */}
+          {tiers.length > 0 && (
+            <div className="flex flex-col gap-3 p-4 bg-white/[0.02] rounded-xl border border-white/5">
+              <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                🔒 Visibilidade por Plano VIP
+              </label>
+              <p className="text-[10px] text-zinc-500 -mt-1">Marque quais planos podem ver este conteúdo. Se nenhum for selecionado, todos os assinantes poderão ver.</p>
+              <div className="flex flex-wrap gap-2">
+                {tiers.map(tier => (
+                  <button
+                    key={tier.id}
+                    type="button"
+                    onClick={() => toggleTierSelection(tier.id)}
+                    className={`px-3 py-2 rounded-lg text-xs font-bold border flex items-center gap-2 transition-all ${
+                      selectedTierIds.includes(tier.id)
+                        ? 'border-primary/50 bg-primary/10 text-primary'
+                        : 'border-white/10 text-zinc-400 hover:bg-white/5'
+                    }`}
+                  >
+                    <span className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] ${
+                      selectedTierIds.includes(tier.id) ? 'border-primary bg-primary text-white' : 'border-white/20'
+                    }`}>
+                      {selectedTierIds.includes(tier.id) && '✓'}
+                    </span>
+                    {tier.name} (${tier.price}/mês)
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* PAYWALL & PPV */}
           <div className="pt-4 border-t border-white/5 flex flex-col gap-4">
              <div className="flex items-center gap-3">
                <input 
@@ -201,7 +347,7 @@ export default function CreatorStudio() {
                  checked={isLocked}
                  onChange={e => {
                    setIsLocked(e.target.checked);
-                   if (!e.target.checked) setPrice(''); // Reset price if unlocked
+                   if (!e.target.checked) setPrice('');
                  }}
                  className="w-4 h-4 rounded bg-background border-white/10 text-primary focus:ring-primary/50" 
                />
@@ -211,19 +357,56 @@ export default function CreatorStudio() {
              </div>
 
              {isLocked && (
-               <div className="flex flex-col gap-2 pl-7 animate-in fade-in slide-in-from-top-2 duration-200">
-                 <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Preço de Desbloqueio (PPV)</label>
-                 <div className="relative w-48">
-                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">$</span>
-                   <input 
-                     type="number" step="0.01" min="0"
-                     value={price}
-                     onChange={e => setPrice(e.target.value)}
-                     className="h-11 w-full rounded-lg bg-background border border-white/10 pl-8 pr-4 text-white text-sm focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none"
-                     placeholder="0.00 (Grátis para VIPs)" 
-                   />
+               <div className="flex flex-col gap-4 pl-7 animate-in fade-in slide-in-from-top-2 duration-200">
+                 <div className="flex flex-col gap-2">
+                   <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Preço de Desbloqueio (PPV)</label>
+                   <div className="relative w-48">
+                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 font-bold">$</span>
+                     <input 
+                       type="number" step="0.01" min="0"
+                       value={price}
+                       onChange={e => setPrice(e.target.value)}
+                       className="h-11 w-full rounded-lg bg-background border border-white/10 pl-8 pr-4 text-white text-sm focus:border-primary/50 focus:ring-1 focus:ring-primary/50 outline-none"
+                       placeholder="0.00 (Grátis para VIPs)" 
+                     />
+                   </div>
+                   <p className="text-[10px] text-zinc-500">Deixe zerado para disponibilizar grátis aos seus assinantes VIP. Defina um valor para vender como Pack avulso.</p>
                  </div>
-                 <p className="text-[10px] text-zinc-500">Deixe zerado para disponibilizar grátis aos seus assinantes VIP mensais. Defina um valor para vender como Pack avulso.</p>
+
+                 {/* PPV GRANULAR POR TIER */}
+                 {price && parseFloat(price) > 0 && tiers.length > 0 && (
+                   <div className="flex flex-col gap-2 p-3 bg-white/[0.02] rounded-xl border border-white/5 animate-in fade-in duration-200">
+                     <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                       💎 Regras de PPV por Plano
+                     </label>
+                     <p className="text-[10px] text-zinc-500 -mt-1">Defina quais planos têm acesso gratuito a este conteúdo PPV e quais precisam pagar.</p>
+                     <div className="flex flex-col gap-2 mt-1">
+                       {tiers.map(tier => {
+                         const override = ppvOverrides.find(o => o.tier_id === tier.id);
+                         const isFree = override?.free ?? true;
+                         return (
+                           <div key={tier.id} className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-white/5">
+                             <div className="flex items-center gap-2">
+                               <span className="text-sm font-bold text-white">{tier.name}</span>
+                               <span className="text-xs text-zinc-500">(${tier.price}/mês)</span>
+                             </div>
+                             <button
+                               type="button"
+                               onClick={() => togglePpvOverride(tier.id)}
+                               className={`px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest transition-all ${
+                                 isFree
+                                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                   : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                               }`}
+                             >
+                               {isFree ? '✓ Incluído' : `$ Cobrar $${price}`}
+                             </button>
+                           </div>
+                         );
+                       })}
+                     </div>
+                   </div>
+                 )}
                </div>
              )}
           </div>
@@ -242,9 +425,6 @@ export default function CreatorStudio() {
       <div className="w-full lg:w-[400px] flex-shrink-0 flex flex-col gap-4">
         <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-widest px-2">Live Preview (Rascunho)</h2>
         
-        {/* Usamos o próprio componente Feed para garantir 100% de fidelidade visual */}
-        {/* Passamos isCreatorView=true para que o dono sempre consiga ver o preview, 
-            mesmo se marcar como "Locked" */}
         <div className="pointer-events-none opacity-90 scale-95 origin-top">
            <Feed posts={[draftPost]} isCreatorView={true} />
         </div>

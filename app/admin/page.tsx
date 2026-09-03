@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { getPlatformFinancialStats } from '@/app/actions/stripe-analytics';
-import { Activity, DollarSign, TrendingUp, Clock, AlertCircle } from 'lucide-react';
+import { Activity, DollarSign, TrendingUp, Clock, AlertCircle, Users, FileText, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 export default function AdminDashboard() {
   const supabase = createClient();
@@ -17,6 +17,17 @@ export default function AdminDashboard() {
     pending: 0,
     currency: 'BRL',
     error: null as string | null
+  });
+
+  // Real DB financial aggregates
+  const [dbFinance, setDbFinance] = useState({
+    totalRevenue: 0,
+    totalPlatformFees: 0,
+    totalCreatorPayouts: 0,
+    totalAffiliatePayouts: 0,
+    thisMonthRevenue: 0,
+    lastMonthRevenue: 0,
+    totalTransactions: 0
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +46,44 @@ export default function AdminDashboard() {
         totalCreators: creatorsCount || 0,
         totalCourses: coursesCount || 0,
       });
+
+      // Fetch all platform_transactions for real aggregates
+      const { data: allTx } = await supabase
+        .from('platform_transactions')
+        .select('amount_total, platform_fee, creator_amount, affiliate_amount, created_at');
+
+      if (allTx) {
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        let totalRevenue = 0, totalPlatformFees = 0, totalCreatorPayouts = 0, totalAffiliatePayouts = 0;
+        let thisMonthRevenue = 0, lastMonthRevenue = 0;
+
+        allTx.forEach(tx => {
+          totalRevenue += Number(tx.amount_total || 0);
+          totalPlatformFees += Number(tx.platform_fee || 0);
+          totalCreatorPayouts += Number(tx.creator_amount || 0);
+          totalAffiliatePayouts += Number(tx.affiliate_amount || 0);
+
+          const txDate = new Date(tx.created_at);
+          if (txDate >= thisMonthStart) {
+            thisMonthRevenue += Number(tx.amount_total || 0);
+          } else if (txDate >= lastMonthStart && txDate < thisMonthStart) {
+            lastMonthRevenue += Number(tx.amount_total || 0);
+          }
+        });
+
+        setDbFinance({
+          totalRevenue,
+          totalPlatformFees,
+          totalCreatorPayouts,
+          totalAffiliatePayouts,
+          thisMonthRevenue,
+          lastMonthRevenue,
+          totalTransactions: allTx.length
+        });
+      }
 
       // Fetch Real Stripe Stats
       try {
@@ -55,9 +104,13 @@ export default function AdminDashboard() {
     fetchData();
   }, [supabase]);
 
-  const formatCurrency = (value: number, currency: string) => {
+  const formatCurrency = (value: number, currency: string = 'BRL') => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currency }).format(value);
   };
+
+  const revenueChange = dbFinance.lastMonthRevenue > 0 
+    ? ((dbFinance.thisMonthRevenue - dbFinance.lastMonthRevenue) / dbFinance.lastMonthRevenue * 100).toFixed(1)
+    : dbFinance.thisMonthRevenue > 0 ? '+100' : '0';
 
   if (isLoading) return <div className="text-zinc-400 p-8 animate-pulse">Carregando painel de controle...</div>;
 
@@ -69,6 +122,7 @@ export default function AdminDashboard() {
         <p className="text-red-400 text-sm mt-1">Global Oversight and Financial Metrics</p>
       </div>
 
+      {/* Platform Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-card border border-red-500/10 rounded-xl p-6 shadow-sm">
            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Total Users</h3>
@@ -88,6 +142,64 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Real Financial Aggregates from platform_transactions */}
+      <div className="mt-2">
+        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-emerald-500" />
+          Revenue Breakdown (Database)
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-emerald-950/30 to-black border border-emerald-500/10 rounded-xl p-5 relative overflow-hidden">
+            <div className="absolute -top-8 -right-8 w-24 h-24 bg-emerald-500/10 blur-[40px] rounded-full pointer-events-none" />
+            <p className="text-xs font-bold text-emerald-400/80 uppercase tracking-widest mb-1">Total Revenue</p>
+            <p className="text-2xl font-black text-white">{formatCurrency(dbFinance.totalRevenue)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">{dbFinance.totalTransactions} transações</p>
+          </div>
+
+          <div className="bg-card border border-white/10 rounded-xl p-5">
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Platform Fees</p>
+            <p className="text-2xl font-black text-emerald-400">{formatCurrency(dbFinance.totalPlatformFees)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Lucro da plataforma</p>
+          </div>
+
+          <div className="bg-card border border-white/10 rounded-xl p-5">
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Creator Payouts</p>
+            <p className="text-2xl font-black text-white">{formatCurrency(dbFinance.totalCreatorPayouts)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Pago aos criadores</p>
+          </div>
+
+          <div className="bg-card border border-white/10 rounded-xl p-5">
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Affiliate Payouts</p>
+            <p className="text-2xl font-black text-amber-400">{formatCurrency(dbFinance.totalAffiliatePayouts)}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">Comissões de afiliados</p>
+          </div>
+        </div>
+
+        {/* Monthly Trend */}
+        <div className="mt-4 p-4 bg-card border border-white/10 rounded-xl flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Este Mês vs. Anterior</p>
+            <p className="text-lg font-black text-white mt-1">{formatCurrency(dbFinance.thisMonthRevenue)}</p>
+          </div>
+          <div className="flex items-center gap-1">
+            {Number(revenueChange) >= 0 ? (
+              <ArrowUpRight className="w-5 h-5 text-emerald-500" />
+            ) : (
+              <ArrowDownRight className="w-5 h-5 text-red-500" />
+            )}
+            <span className={`text-lg font-black ${Number(revenueChange) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {revenueChange}%
+            </span>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-zinc-500">Mês anterior</p>
+            <p className="text-sm font-bold text-zinc-400">{formatCurrency(dbFinance.lastMonthRevenue)}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stripe Live Balance */}
       <div className="mt-4">
         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
           <Activity className="w-5 h-5 text-emerald-500" />

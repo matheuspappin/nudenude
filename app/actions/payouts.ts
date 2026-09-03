@@ -40,7 +40,17 @@ export async function processSplitAndPayout({
     let affiliateStripeId: string | null = null;
     let affiliatePercentage = 0;
 
-    // 2. Fetch Affiliate Data if applicable
+    // 2. Fetch Platform Settings (dynamic fees instead of hardcoded)
+    const { data: platformSettings } = await supabase
+      .from('platform_settings')
+      .select('platform_fee_percent, affiliate_fee_percent')
+      .limit(1)
+      .single();
+
+    const PLATFORM_FEE_PERCENTAGE = platformSettings?.platform_fee_percent ?? 20;
+    const DEFAULT_AFFILIATE_PERCENTAGE = platformSettings?.affiliate_fee_percent ?? 10;
+
+    // 3. Fetch Affiliate Data if applicable
     if (affiliateId) {
       const { data: affiliate } = await supabase
         .from('profiles')
@@ -53,17 +63,23 @@ export async function processSplitAndPayout({
         // Check if there is a custom override for this creator-affiliate combo
         const { data: customAffiliate } = await supabase
           .from('affiliates')
-          .select('percentage')
+          .select('percentage, expires_at')
           .eq('affiliate_id', affiliateId)
           .eq('creator_id', creatorId)
           .single();
-          
-        affiliatePercentage = customAffiliate?.percentage || 10; // Default 10%
+        
+        // Check if affiliate relationship has expired
+        if (customAffiliate?.expires_at && new Date(customAffiliate.expires_at) < new Date()) {
+          // Affiliate expired — no commission
+          affiliateStripeId = null;
+          affiliatePercentage = 0;
+        } else {
+          affiliatePercentage = customAffiliate?.percentage || DEFAULT_AFFILIATE_PERCENTAGE;
+        }
       }
     }
 
-    // 3. Calculate Splits
-    const PLATFORM_FEE_PERCENTAGE = 20; // 20% platform fee
+    // 4. Calculate Splits
     const platformAmount = amountTotal * (PLATFORM_FEE_PERCENTAGE / 100);
     const affiliateAmount = affiliateStripeId ? amountTotal * (affiliatePercentage / 100) : 0;
     const creatorAmount = amountTotal - platformAmount - affiliateAmount;
