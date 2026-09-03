@@ -64,6 +64,24 @@ export async function POST(req: Request) {
       }
 
       console.log(`Purchase completed for user ${userId}, course ${courseId}`);
+
+      // 2. Process Stripe Transfer for the creator
+      const { data: course } = await supabase
+        .from('courses')
+        .select('creator_id')
+        .eq('id', courseId)
+        .single();
+        
+      if (course && session.amount_total) {
+        const { processSplitAndPayout } = await import('@/app/actions/payouts');
+        await processSplitAndPayout({
+          buyerId: userId,
+          creatorId: course.creator_id,
+          amountTotal: session.amount_total / 100, // session.amount_total is in cents
+          transactionType: 'ppv',
+          stripeSessionId: stripeSessionId
+        });
+      }
     } else if (event.type === 'payment_intent.payment_failed') {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       console.log(`Payment failed: ${paymentIntent.last_payment_error?.message}`);

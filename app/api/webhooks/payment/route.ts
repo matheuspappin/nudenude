@@ -47,6 +47,24 @@ export async function POST(req: Request) {
       });
       
       if (subError) throw subError;
+
+      // 2.4: Execute Stripe Transfer for the subscription payout
+      const { data: tier } = await supabase
+        .from('subscription_tiers')
+        .select('price')
+        .eq('id', tier_id)
+        .single();
+        
+      if (tier && tier.price > 0) {
+        const { processSplitAndPayout } = await import('@/app/actions/payouts');
+        await processSplitAndPayout({
+          buyerId: subscriber_id,
+          creatorId: creator_id,
+          amountTotal: tier.price,
+          transactionType: 'subscription',
+          stripeSessionId: idempotencyKey,
+        });
+      }
     } else if (eventType === 'cancel') {
         // Logica para cancelamento (apenas revoga o status no banco)
         const { error: cancelError } = await supabase
