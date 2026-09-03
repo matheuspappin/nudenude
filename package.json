@@ -1,17 +1,15 @@
 {
-  "name": "nudenude",
+  "name": "dancecreator",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3005",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
-    "@farcaster/mini-app-solana": "latest",
-    "@privy-io/react-auth": "latest",
-    "@privy-io/server-auth": "latest",
+    "@heliofi/checkout-react": "^4.0.9",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
     "hls.js": "^1.5.11",
@@ -19,7 +17,8 @@
     "lucide-react": "^0.412.0",
     "next": "14.2.5",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "stripe": "^22.6.1"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -29,6 +28,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8",
+    "puppeteer": "^25.9.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

@@ -6,9 +6,9 @@ export default function TermsPage() {
         <p className="text-sm text-zinc-500 mb-8">Last updated: August 2026</p>
         
         <div className="prose prose-invert max-w-none text-zinc-400">
-          <h2 className="text-xl font-bold text-white mt-8 mb-4">1. Welcome to NudeNude</h2>
+          <h2 className="text-xl font-bold text-white mt-8 mb-4">1. Welcome to CreatorDance</h2>
           <p className="mb-4">
-            NudeNude is a premium creator ecosystem and monetization software platform. 
+            CreatorDance is a premium creator ecosystem and monetization software platform. 
             We provide creators with the tools to manage their communities, sell exclusive digital content, 
             and offer VIP subscriptions to their superfans.
           </p>

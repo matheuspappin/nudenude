@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-// Assuming @heliofi/checkout-react is installed, or we use an iframe/embedded approach
-// We will mock the wrapper for demonstration and integration purposes
+import { useEffect, useState, useMemo } from 'react';
+import { HelioCheckout } from '@heliofi/checkout-react';
+import { createHelioCharge } from '@/app/actions/checkout';
 
 interface HelioPaywallProps {
   purchaseType: 'credit_package' | 'vip_pass';
@@ -30,49 +30,86 @@ export default function HelioPaywall({
   onError
 }: HelioPaywallProps) {
   const [loading, setLoading] = useState(false);
+  const [chargeToken, setChargeToken] = useState<string | null>(null);
+  const [isMock, setIsMock] = useState(false);
 
   const title = purchaseType === 'credit_package' 
     ? `Buy ${creditsAmount} Credits` 
     : `VIP Pass - ${creatorName || 'Creator'}`;
     
   const description = purchaseType === 'credit_package'
-    ? 'Purchase NudeNude Credits to unlock exclusive posts and tip your favorite creators.'
+    ? 'Purchase CreatorDance Credits to unlock exclusive posts and tip your favorite creators.'
     : 'Subscribe for exclusive access. Billed via secure Crypto or Apple Pay.';
 
-  const handleCheckout = async () => {
+  const handleInitCheckout = async () => {
     setLoading(true);
     try {
-      console.log(`Initiating Helio Pay for ${amount} ${currency} - ${title}`);
-      
-      if (purchaseType === 'credit_package') {
-         console.log(`Routing 100% to Platform Treasury (Credits Purchase)`);
-      } else {
-         console.log(`Routing 85% to ${creatorWallet} and 15% to Treasury (VIP Pass)`);
-      }
-      
-      const payload = {
+      // Create a secure charge session on the backend
+      const result = await createHelioCharge({
         userId: buyerId,
-        type: purchaseType,
-        targetId: creatorWallet, // Or a database ID for the creator
-        creditsAmount
-      };
-      
-      console.log('Sending metadata to Helio:', payload);
+        purchaseType,
+        amount,
+        creditsAmount,
+        creatorWallet
+      });
 
-      // Simulate network request to Helio SDK
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate successful payment webhook trigger locally
-      const mockPaymentId = `helio_${Date.now()}`;
-      onSuccess(mockPaymentId);
+      if (result.success) {
+        setIsMock(result.isMock || false);
+        setChargeToken(result.chargeToken || 'mock_token');
+      } else {
+        throw new Error(result.error);
+      }
     } catch (err) {
-      console.error('Helio Checkout Error:', err);
+      console.error('Failed to init Helio charge:', err);
       if (onError) onError(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // If we have a chargeToken and it's a real integration, render Helio Checkout
+  const helioConfig = useMemo(() => {
+    return {
+      paylinkId: process.env.NEXT_PUBLIC_HELIO_PAYLINK_ID || "MOCK_PAYLINK",
+      paymentType: "paylink",
+      chargeToken: chargeToken === 'mock_token' ? undefined : chargeToken,
+      amount: amount.toString(), // Dynamic amount override
+      onSuccess: (event: any) => {
+        console.log('Helio payment success', event);
+        onSuccess(event?.transactionSignature || 'success');
+      },
+      onError: (err: any) => {
+        console.error('Helio checkout error', err);
+        if (onError) onError(err);
+      }
+    };
+  }, [chargeToken, amount, onSuccess, onError]);
+
+  if (chargeToken) {
+    if (isMock) {
+      // Falha gracefully para simulação local se não houver chaves de API
+      return (
+        <div className="p-6 border border-white/10 rounded-xl bg-card flex flex-col items-center justify-center shadow-lg gap-4">
+          <p className="text-amber-500 font-bold">Simulated Checkout</p>
+          <button
+            onClick={() => onSuccess(`mock_success_${Date.now()}`)}
+            className="h-12 w-full max-w-sm rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all shadow-glow"
+          >
+            Confirm Mock Payment
+          </button>
+        </div>
+      );
+    }
+
+    // Renderiza o componente oficial da Helio se for produção / tiver chave
+    return (
+      <div className="w-full">
+         <HelioCheckout config={helioConfig as any} />
+      </div>
+    );
+  }
+
+  // Tela Inicial (Antes de gerar o token)
   return (
     <div className="p-6 border border-white/10 rounded-xl bg-card flex flex-col items-center justify-center shadow-lg gap-4">
       <div className="flex items-center gap-2 mb-2">
@@ -85,12 +122,12 @@ export default function HelioPaywall({
       </p>
 
       <button
-        onClick={handleCheckout}
+        onClick={handleInitCheckout}
         disabled={loading}
         className="h-12 w-full max-w-sm rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-glow"
       >
         {loading ? (
-          <span className="animate-pulse">Processing...</span>
+          <span className="animate-pulse">Loading secure checkout...</span>
         ) : (
           `Pay ${amount} ${currency}`
         )}

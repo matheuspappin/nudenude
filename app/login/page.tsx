@@ -19,16 +19,12 @@ export default function LoginPage() {
     setIsLoading(true);
     
     // MOCK VIP BYPASS (Para os painéis de demonstração rápidos)
-    if (email === 'abc@abc.com' && password === '123456') {
+    if (email === 'creator@dance.com' && password === '123456') {
       router.push('/dashboard');
       return;
     }
-    if (email === 'vendaslachef@gmail.com' && password === '123456') {
-      router.push('/admin');
-      return;
-    }
-    if (email === 'usuario@abc.com' && password === '123456') {
-      router.push('/isabella');
+    if (email === 'student@dance.com' && password === '123456') {
+      router.push('/');
       return;
     }
 
@@ -43,6 +39,20 @@ export default function LoginPage() {
     if (authError) {
       setError(authError.message);
       return;
+    }
+
+    // Check if user is super admin
+    if (data?.user?.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', data.user.id)
+        .single();
+        
+      if (profile?.is_admin || data.user.email === 'vendaslachef@gmail.com') {
+        router.push('/admin');
+        return;
+      }
     }
 
     // Se tiver logado com sucesso de verdade, redireciona pro inicio
@@ -63,7 +73,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 bg-card border border-white/10 rounded-2xl shadow-2xl flex flex-col items-center">
         <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Log In</h1>
         <p className="text-muted-foreground text-sm mb-6 text-center">
-          Log into <span className="font-medium text-zinc-300">NudeNude</span> to enjoy premium content or manage your dashboard.
+          Log into <span className="font-medium text-zinc-300">CreatorDance</span> to access your courses or manage your dashboard.
         </p>
 
         {error && (
@@ -124,7 +134,7 @@ export default function LoginPage() {
         </p>
 
         <p className="text-sm text-muted-foreground mt-2">
-          Want to monetize your audience? <Link href="/become-creator" className="text-primary font-medium hover:underline">Become a Creator</Link>
+          Want to monetize your dance classes? <Link href="/signup?role=creator" className="text-primary font-medium hover:underline">Start Teaching</Link>
         </p>
       </div>
     </div>

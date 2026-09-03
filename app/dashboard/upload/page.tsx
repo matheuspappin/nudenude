@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Feed, { Post } from '@/components/Feed';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -11,9 +11,22 @@ export default function CreatorStudio() {
   const [isLocked, setIsLocked] = useState(false);
   const [price, setPrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [collections, setCollections] = useState<any[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string>('');
+  const [newCollectionName, setNewCollectionName] = useState('');
   
   const supabase = createClient();
   const router = useRouter();
+
+  useEffect(() => {
+    async function fetchCollections() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase.from('post_collections').select('*').eq('creator_id', session.user.id).order('created_at', { ascending: false });
+      if (data) setCollections(data);
+    }
+    fetchCollections();
+  }, [supabase]);
 
   const draftPost: Post = {
     id: 'draft',
@@ -44,14 +57,36 @@ export default function CreatorStudio() {
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
+      let finalCollectionId = selectedCollectionId || null;
+
+      // If user typed a new collection name, create it first
+      if (newCollectionName.trim()) {
+        const { data: newColl, error: collError } = await supabase
+          .from('post_collections')
+          .insert({ creator_id: session.user.id, name: newCollectionName.trim() })
+          .select()
+          .single();
+          
+        if (collError) {
+          alert('Erro ao criar coleção: ' + collError.message);
+          setIsSubmitting(false);
+          return;
+        }
+        if (newColl) {
+          finalCollectionId = newColl.id;
+          setCollections([newColl, ...collections]);
+        }
+      }
+
       const { error } = await supabase
-        .from('media')
+        .from('posts')
         .insert({
           creator_id: session.user.id,
           post_text: caption,
           media_urls: mediaUrls.length > 0 ? mediaUrls : null,
           is_locked: isLocked,
-          price: isLocked && price ? parseFloat(price) : 0
+          price: isLocked && price ? parseFloat(price) : 0,
+          collection_id: finalCollectionId
         });
 
       if (!error) {
@@ -60,6 +95,8 @@ export default function CreatorStudio() {
         setMediaUrls([]);
         setIsLocked(false);
         setPrice('');
+        setNewCollectionName('');
+        setSelectedCollectionId('');
       } else {
         alert('Erro ao postar: ' + error.message);
       }
@@ -122,6 +159,38 @@ export default function CreatorStudio() {
                 Anexar
               </button>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Local da Postagem (Série / Coleção)</label>
+            <div className="flex flex-col gap-2">
+              <select 
+                value={selectedCollectionId} 
+                onChange={e => {
+                  setSelectedCollectionId(e.target.value);
+                  if (e.target.value !== 'new') setNewCollectionName('');
+                }}
+                className="h-11 bg-background border border-white/10 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-primary/50"
+              >
+                <option value="">Feed Principal Geral</option>
+                {collections.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+                <option value="new">+ Criar nova pasta/série...</option>
+              </select>
+              
+              {selectedCollectionId === 'new' && (
+                <input 
+                  type="text" 
+                  value={newCollectionName}
+                  onChange={e => setNewCollectionName(e.target.value)}
+                  placeholder="Nome do local (ex: Masterclass 1)" 
+                  className="h-11 bg-background border border-white/10 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-primary/50"
+                  required
+                />
+              )}
+            </div>
+            <p className="text-[10px] text-zinc-500 mt-1">Organize seus vídeos em pastas para facilitar a navegação no seu perfil.</p>
           </div>
 
           <div className="pt-4 border-t border-white/5 flex flex-col gap-4">

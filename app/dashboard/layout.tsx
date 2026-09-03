@@ -32,6 +32,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Visão Geral', href: '/dashboard' },
     { name: 'Nova Postagem', href: '/dashboard/upload' },
     { name: 'Planos VIP', href: '/dashboard/tiers' },
+    { name: 'Monetização (Stripe)', href: '/dashboard/monetization' },
+    { name: 'Afiliados', href: '/dashboard/affiliates' },
     { name: 'KYC / Identidade', href: '/dashboard/kyc' },
   ];
 
@@ -66,6 +68,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             Ver Perfil Público
           </Link>
+
+          <Link href="/" className="flex items-center gap-2 px-4 py-2.5 rounded-md text-primary font-bold bg-white/5 hover:bg-white/10 transition-colors mt-4 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Sair do Estúdio
+          </Link>
+          <button 
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/login';
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-md text-zinc-500 font-bold hover:text-white transition-colors text-left"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Deslogar
+          </button>
         </div>
       </aside>
       

@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
 
 interface VideoPlayerProps {
-  src: string; // URL da CDN, ex: https://cdn.nudenude.com/creator_123/post_456/video.m3u8
+  src: string; // URL da CDN, ex: https://cdn.dancecreator.com/creator_123/post_456/video.m3u8
   poster?: string;
 }
 

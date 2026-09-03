@@ -216,6 +216,39 @@ export default function UserProfile() {
            ></textarea>
         </div>
 
+        {/* Programa de Afiliados (Indicação) */}
+        <div className="flex flex-col gap-4 mb-8 p-5 bg-background/50 rounded-xl border border-white/5">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h2 className="text-lg font-bold text-white">Affiliate Program</h2>
+              <p className="text-xs text-zinc-400">Invite your friends and earn a percentage when they buy courses or subscribe!</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-white">Your Unique Invite Link</label>
+            <div className="flex items-center gap-3">
+              <input 
+                type="text" 
+                readOnly 
+                value={profile.id ? `${typeof window !== 'undefined' ? window.location.origin : ''}/signup?ref=${profile.id}` : 'Loading...'} 
+                className="flex-1 h-11 rounded-lg bg-background border border-white/10 px-4 text-zinc-400 focus:outline-none"
+              />
+              <button 
+                onClick={() => {
+                  if (profile.id) {
+                    navigator.clipboard.writeText(`${window.location.origin}/signup?ref=${profile.id}`);
+                    alert('Link copiado!');
+                  }
+                }}
+                className="h-11 px-4 bg-white/5 text-white font-bold text-xs rounded-lg hover:bg-white/10 transition-colors border border-white/10 whitespace-nowrap"
+              >
+                Copy Link
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Área de Privacidade e LGPD para o Consumidor */}
         <div className="flex flex-col gap-4 mb-8 p-5 bg-background/50 rounded-xl border border-white/5">
            <label className="flex items-start gap-3 cursor-pointer group">
@@ -234,7 +267,7 @@ export default function UserProfile() {
                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="absolute text-background opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"><polyline points="20 6 9 17 4 12"></polyline></svg>
              </div>
              <span className="text-xs text-zinc-500 leading-relaxed font-medium">
-               <strong>Consent & Privacy:</strong> I agree with the processing of my e-mail, profile information and encrypted payment data exclusively to enable subscriptions and interactions within the NudeNude platform.
+               <strong>Consent & Privacy:</strong> I agree with the processing of my e-mail, profile information and encrypted payment data exclusively to enable subscriptions and interactions within the CreatorDance platform.
              </span>
            </label>
         </div>
