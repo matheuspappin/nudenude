@@ -82,8 +82,19 @@ export default function DashboardHome() {
         setActiveSubscribers(totalSubscribers);
         setMrr(totalMrr);
         
-        // Payout Ledger is not implemented yet, using MRR as mock balance for now
-        setBalance(totalMrr);
+        // Calculate Real Balance from Platform Transactions
+        const { data: txData } = await supabase
+          .from('platform_transactions')
+          .select('creator_amount')
+          .eq('creator_id', session.user.id);
+          
+        let realBalance = 0;
+        if (txData) {
+          txData.forEach((tx: any) => {
+            realBalance += Number(tx.creator_amount || 0);
+          });
+        }
+        setBalance(realBalance);
 
         // Fetch Events
         const { data: eventsData } = await supabase
@@ -114,27 +125,7 @@ export default function DashboardHome() {
     fetchDashboardData();
   }, [router, supabase]);
 
-  const handleSaveProfile = async () => {
-    if (!userId) return;
-    setIsSavingProfile(true);
-    
-    const stylesArray = danceStyles.split(',').map(s => s.trim()).filter(s => s);
-    
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        location: location,
-        dance_styles: stylesArray
-      })
-      .eq('id', userId);
-      
-    setIsSavingProfile(false);
-    if (error) {
-      alert("Erro ao salvar perfil: " + error.message);
-    } else {
-      alert("Perfil salvo com sucesso!");
-    }
-  };
+  // Profile Settings were moved to /profile
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,44 +297,7 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Configurações de Perfil (Local e Estilos) */}
-      <div className="p-6 bg-card border border-white/10 rounded-xl shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-white">Profile Settings</h2>
-            <p className="text-sm text-zinc-400">Set your location and dance styles to be discovered by local students.</p>
-          </div>
-          <button onClick={handleSaveProfile} disabled={isSavingProfile} className="px-4 py-2 bg-white/5 text-white font-bold text-sm rounded-lg hover:bg-white/10 transition-colors border border-white/10 disabled:opacity-50">
-            {isSavingProfile ? 'Saving...' : 'Save Profile'}
-          </button>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-6">
-          <div className="flex-1 flex flex-col gap-2">
-            <label className="text-sm font-bold text-white">Base Location</label>
-            <input 
-              type="text" 
-              placeholder="e.g. Rio de Janeiro, RJ" 
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-              className="h-11 rounded-lg bg-background border border-white/10 px-4 text-white focus:border-primary/50 outline-none"
-            />
-            <p className="text-xs text-zinc-500">Helps students find you in the Community Explore page.</p>
-          </div>
-          
-          <div className="flex-1 flex flex-col gap-2">
-            <label className="text-sm font-bold text-white">Dance Styles</label>
-            <input 
-              type="text" 
-              placeholder="e.g. Hip Hop, Heels, Vogue" 
-              value={danceStyles}
-              onChange={e => setDanceStyles(e.target.value)}
-              className="h-11 rounded-lg bg-background border border-white/10 px-4 text-white focus:border-primary/50 outline-none"
-            />
-            <p className="text-xs text-zinc-500">Enter your styles separated by commas.</p>
-          </div>
-        </div>
-      </div>
+      {/* Removed Profile Settings and Affiliate Program as they belong in their respective menu sections */}
 
       {/* MODAL DE EVENTO */}
       {isEventModalOpen && (
