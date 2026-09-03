@@ -172,7 +172,7 @@ export default function CreatorStudio() {
                 }}
                 className="h-11 bg-background border border-white/10 rounded-lg px-4 text-sm text-white focus:outline-none focus:border-primary/50"
               >
-                <option value="">Feed Principal Geral</option>
+                <option value="">Exclusive Feed (Geral)</option>
                 {collections.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}

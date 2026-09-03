@@ -251,7 +251,7 @@ export default function CreatorProfile({ params }: { params: { username: string 
           onClick={() => setActiveTab('feed')}
           className={`flex-1 min-w-[120px] py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'feed' ? 'bg-primary text-primary-foreground shadow-glow' : 'bg-white/5 text-zinc-400 hover:bg-white/10 border border-white/5'}`}
         >
-          Últimos Lançamentos
+          EXCLUSIVE FEED
         </button>
         
         {collections.map(c => (
