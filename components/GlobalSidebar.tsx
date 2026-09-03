@@ -8,7 +8,7 @@ export default function GlobalSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const [role, setRole] = useState<string | null>(null);
+  const [roles, setRoles] = useState({ isAdmin: false, isCreator: false, isStudent: true });
   
   useEffect(() => {
     const fetchRole = async () => {
@@ -22,13 +22,13 @@ export default function GlobalSidebar() {
         .single();
         
       if (profile) {
-        if (profile.is_admin || session.user.email === 'vendaslachef@gmail.com') {
-          setRole('admin');
-        } else if (profile.is_creator) {
-          setRole('creator');
-        } else {
-          setRole('student');
-        }
+        const isAdmin = profile.is_admin || session.user.email === 'vendaslachef@gmail.com';
+        const isCreator = profile.is_creator;
+        setRoles({ 
+          isAdmin, 
+          isCreator,
+          isStudent: !isCreator 
+        });
       }
     };
     
@@ -80,19 +80,19 @@ export default function GlobalSidebar() {
        </div>
        
        <div className="mt-auto px-4 lg:px-6 mb-8 hidden lg:flex flex-col gap-4">
-          {role === 'admin' && (
+          {roles.isAdmin && (
             <Link href="/admin" className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-red-900/50 text-red-400 text-sm font-bold border border-red-900 hover:bg-red-900 hover:border-red-500 transition-colors shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
               Super Admin
             </Link>
           )}
-          {role === 'creator' && (
+          {roles.isCreator && (
             <Link href="/dashboard" className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-zinc-800 text-white text-sm font-bold border border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600 transition-colors shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
               Creator Dashboard
             </Link>
           )}
-          {role === 'student' && (
+          {roles.isStudent && (
             <Link href="/become-creator" className="w-full text-center py-2.5 rounded-full bg-white/5 text-primary text-sm font-bold hover:bg-white/10 transition-colors">
               Become a Creator
             </Link>
